@@ -47,19 +47,22 @@ module RDFS
       case request.query['api_call']
         # Add a node
         when "add_node"
-          sql = "SELECT COUNT(ip) FROM nodes WHERE ip = '" + ip + "'"
-          row = RDFS_DB.execute(sql)
-          if row[0][0] == 0
-            sql = "INSERT INTO nodes (ip) VALUES ('" + ip + "')"
-            RDFS_DB.execute(sql)
+          query = RDFS_DB.prepare("SELECT ip FROM nodes WHERE ip = :ip")
+          query.bind_param('ip', ip)
+          row = query.execute
+          unless row.count > 0
+            query = RDFS_DB.prepare("INSERT INTO nodes (ip) VALUES (:ip)")
+            query.bind_param('ip', ip)
+            query.execute
             response_text = "Node with IP " + ip + " added.\n"
           else
             response_text = "Node with IP " + ip + " was already registered.\n"
           end
         # Remove a node
         when "delete_node"
-          sql = "DELETE FROM nodes WHERE ip = '" + ip + "'"
-          RDFS_DB.execute(sql)
+          query = RDFS_DB.prepare("DELETE FROM nodes WHERE ip = :ip")
+          query.bind_param('ip', ip)
+          query.execute
           response_text = "Node with IP " + ip + " removed.\n"
       end
 
