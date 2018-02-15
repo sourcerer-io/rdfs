@@ -4,7 +4,7 @@
 Copyright (C) 2018 Sourcerer, All Rights Reserved
 Written by Robert W. Oliver II - <robert@cidergrove.com>
 
-## BASIC OVERVIEW
+## OVERVIEW
 
 RDFS monitors for changes within a folder. Once these are detected, the files are SHA256 hashed and that hash, along with last-modified time is stored in an SQLite3 database. Upon changes, these hashes are updated.
 
@@ -22,5 +22,6 @@ apt install ruby-sqlite3 ruby-daemons
 ## LICENSE
 
 This software is licensed under the GPLv3 or later.
+
 
 
