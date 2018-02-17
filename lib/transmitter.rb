@@ -36,7 +36,7 @@ module RDFS
       while @running
         @logger.debug("Transmitter thread running.")
 
-        # TODO: Transmit
+        # Transmit
         transmit
 
         @logger.debug("Transmitter thread paused.")
@@ -67,13 +67,59 @@ module RDFS
         @logger.debug(sql)
         row = RDFS_DB.execute(sql)
         if row.count > 0
-          # TODO: Transmit file(s)
+          nodes_row.each do |node|
+            row.each do |file|
+              ip = node[0]
+              sha256sum = file[0]
+              filename = file[1]
+              # Check to see if the file exists using some other filename.
+              # If it does, we make a call to add without actually sending the file.
+              uri = URI.parse('http://' + ip + ':' + RDFS_PORT.to_s + '/files')
+              response = Net::HTTP.post_form(uri,
+                'api_call' => 'add_query', 
+                'filename' => filename, 
+                'sha256sum' => sha256sum)
+              if response.body.include?("EXISTS")
+                # File exists but with a different filename, so call the add_dup
+                # function to avoid using needless bandwidth
+                response = Net::HTTP.post_form(uri,
+                  'api_call' => 'add_dup', 
+                  'filename' => filename, 
+                  'sha256sum' => sha256sum)
+                if response.body.include?("OK")
+                  clear_update_flag(filename, sha256sum)
+                end
+              else
+                # File doesn't exist on node, so let's push it.
+                # Read it into a string (this will have to be improved at some point)
+                file_handle = File.open(RDFS_PATH + "/" + filename, "rb")
+                file_contents = file_handle.read
+                file_handle.close
+                # Then push it in a POST call
+                response = Net::HTTP.post_form(uri,
+                  'api_call' => 'add', 
+                  'filename' => filename, 
+                  'sha256sum' => sha256sum,
+                  'content' => file_contents)
+                if response.body.include?("OK")
+                  clear_update_flag(filename, sha256sum)
+                end
+              end
+            end
+          end
         else
           @logger.debug("No files to transmit.")
         end
       else
         @logger.debug("No nodes found.")
       end
+    end
+
+    # Clears the updated flag on a file
+    def clear_update_flag(filename, sha256sum)
+      sql = "UPDATE files SET updated = 0 WHERE name = '" + filename + "' AND sha256 = '" + sha256sum + "'"
+      @logger.debug(sql)
+      RDFS_DB.execute(sql)
     end
 
   end

@@ -17,7 +17,55 @@ module RDFS
  
       @webrick = WEBrick::HTTPServer.new :Port => RDFS_PORT
       @webrick.mount "/nodes", Nodes
+      @webrick.mount "/files", Files
       @webrick.start
+    end
+
+  end
+
+  class Files < WEBrick::HTTPServlet::AbstractServlet
+
+    attr_accessor :logger
+
+    # Process a POST request
+    def do_POST(request, response)
+      status, content_type, body = api_handler(request)
+      response.status = status
+      response['Content-Type'] = content_type
+      response.body = body
+    end
+
+    private
+
+    def api_handler(request)
+      
+      # We assume this by default, but can change it as the function progresses
+      response_text = "OK"
+
+      # Grab the IP of the requester
+      ip = request.remote_ip
+
+      case request.query['api_call']
+        when "add"
+          # TODO: Add file
+          
+        when "add_dup"
+          # TODO: Add file with matching SHA256 sig
+
+        when "add_query"
+          # Check if duplicate exists
+          sha256sum = request.sha256sum
+          query = RDFS_DB.prepare("SELECT sha256 FROM files WHERE sha256 = ?")
+          query.bind_param('sha256', sha256sum)
+          row = query.execute
+          if row.count > 0
+            response_text = "EXISTS"
+          else
+            response_text = "NOT_FOUND"
+          end
+      end
+
+      return 200, "text/plain", response_text
     end
 
   end

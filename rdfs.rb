@@ -36,6 +36,8 @@ require 'sqlite3'
 require 'find'
 require 'logger'
 require 'webrick'
+require 'uri'
+require 'net/http'
 
 require_relative 'lib/updater'
 require_relative 'lib/transmitter'
