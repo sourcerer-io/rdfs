@@ -66,7 +66,22 @@ module RDFS
           # do this for us text time around.
           
         when "add_dup"
-          # TODO: Add file with matching SHA256 sig
+          filename = request.query['filename']
+          sha256sum = request.query['sha256sum']
+
+          # Grab the original filename
+          query = DB.prepare("SELECT name FROM files WHERE sha256 = :sha256")
+          query.bind_param('sha256', sha256sum)
+          row = query.execute
+          if row.count > 0
+            old_name = RDFS_PATH + "/" + row[0]
+            new_name = RDFS_PATH + "/" + filename
+            FileUtils.cp(old_name, new_name)
+          else
+            # SHA256 not found
+            # File deleted after query but before add_dup?
+            response_text = "NOT_FOUND"
+          end
 
         when "add_query"
           # Check if duplicate exists
