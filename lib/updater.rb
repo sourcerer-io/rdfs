@@ -45,22 +45,9 @@ module RDFS
       end
     end
 
-    # Reads a binary file and returns its contents in a string
-    def read_file(file)
-      file = File.open(file, "rb")
-      return file.read
-    end
-
     # Create SHA256 of a file
     def sha256file(file)
       return Digest::SHA256.file(file).hexdigest
-    end
-
-    # Create SHA256 of a string
-    # This currently isn't used, but will be used when we split
-    # files and transmit blocks instead of whole files.
-    def sha256(string)
-      return Digest::SHA256.digest string
     end
 
     # Return a tree of the specified path
@@ -84,7 +71,7 @@ module RDFS
 
         # If it's not in the database, hash it and add it to the DB
         row = RDFS_DB.execute("SELECT COUNT(*) FROM files WHERE name = '" + f + "'") 
-        if row[0][0] == 0
+        if row[0][0] == 0 && full_filename.include?(".rdfstmp")
           # It wasn't in the database, so add it
           file_hash = sha256file(full_filename)
           sql = "INSERT INTO files (sha256, name, last_modified, updated) VALUES ('" + file_hash + "', '" + f + "', " + last_modified.to_i.to_s + ", 1)"

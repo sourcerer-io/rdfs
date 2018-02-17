@@ -38,6 +38,8 @@ require 'logger'
 require 'webrick'
 require 'uri'
 require 'net/http'
+require 'zlib'
+require 'base64'
 
 require_relative 'lib/updater'
 require_relative 'lib/transmitter'

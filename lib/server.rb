@@ -47,15 +47,31 @@ module RDFS
 
       case request.query['api_call']
         when "add"
-          # TODO: Add file
+          filename = request.query['filename']
+          tmp_filename = RDFS_PATH + filename + ".rdfstmp"
+          final_filename = RDFS_PATH + filename
+          
+          # Decode, decompress, then save the file
+          # We could use better compression, but for now this will work.
+          File.write(tmp_filename, Zlib::Inflate.inflate(Base64.decode64(request.query['contents'])))
+          
+          # Compare SHA256 - if it doesn't match, delete
+          if sha256file(tmp_filename) != sha256sum
+            File.unlink(tmp_filename)
+          else
+            File.rename(tmp_filename, final_filename)
+          end
+          
+          # There's no need to INSERT into the database, the updater will
+          # do this for us text time around.
           
         when "add_dup"
           # TODO: Add file with matching SHA256 sig
 
         when "add_query"
           # Check if duplicate exists
-          sha256sum = request.sha256sum
-          query = RDFS_DB.prepare("SELECT sha256 FROM files WHERE sha256 = ?")
+          sha256sum = request.query['sha256sum']
+          query = RDFS_DB.prepare("SELECT sha256 FROM files WHERE sha256 = :sha256")
           query.bind_param('sha256', sha256sum)
           row = query.execute
           if row.count > 0
@@ -66,6 +82,11 @@ module RDFS
       end
 
       return 200, "text/plain", response_text
+    end
+
+    # Create SHA256 of a file
+    def sha256file(file)
+      return Digest::SHA256.file(file).hexdigest
     end
 
   end
@@ -115,6 +136,11 @@ module RDFS
       end
 
       return 200, "text/plain", response_text
+    end
+
+    # Create SHA256 of a file
+    def sha256file(file)
+      return Digest::SHA256.file(file).hexdigest
     end
 
   end

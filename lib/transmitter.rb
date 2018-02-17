@@ -92,9 +92,8 @@ module RDFS
               else
                 # File doesn't exist on node, so let's push it.
                 # Read it into a string (this will have to be improved at some point)
-                file_handle = File.open(RDFS_PATH + "/" + filename, "rb")
-                file_contents = file_handle.read
-                file_handle.close
+                file_contents = read_file(RDFS_PATH + "/" + filename)
+                file_contents = Zlib::Deflate.deflate(Base64.encode64(file_contents))
                 # Then push it in a POST call
                 response = Net::HTTP.post_form(uri,
                   'api_call' => 'add', 
@@ -115,6 +114,12 @@ module RDFS
       end
     end
 
+    # Reads a binary file and returns its contents in a string
+    def read_file(file)
+      file = File.open(file, "rb")
+      return file.read
+    end
+
     # Clears the updated flag on a file
     def clear_update_flag(filename, sha256sum)
       sql = "UPDATE files SET updated = 0 WHERE name = '" + filename + "' AND sha256 = '" + sha256sum + "'"
@@ -125,4 +130,3 @@ module RDFS
   end
 
 end
-
