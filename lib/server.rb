@@ -53,7 +53,7 @@ module RDFS
           
           # Decode, decompress, then save the file
           # We could use better compression, but for now this will work.
-          File.write(tmp_filename, Zlib::Inflate.inflate(Base64.decode64(request.query['contents'])))
+          File.write(tmp_filename, Zlib::Inflate.inflate(Base64.decode64(request.query['content'])))
           
           # Compare SHA256 - if it doesn't match, delete
           if sha256file(tmp_filename) != sha256sum
