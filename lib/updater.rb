@@ -71,7 +71,7 @@ module RDFS
 
         # If it's not in the database, hash it and add it to the DB
         row = RDFS_DB.execute("SELECT COUNT(*) FROM files WHERE name = '" + f + "'") 
-        if row[0][0] == 0 && full_filename.include?(".rdfstmp")
+        if row[0][0] == 0
           # It wasn't in the database, so add it
           file_hash = sha256file(full_filename)
           sql = "INSERT INTO files (sha256, name, last_modified, updated) VALUES ('" + file_hash + "', '" + f + "', " + last_modified.to_i.to_s + ", 1)"

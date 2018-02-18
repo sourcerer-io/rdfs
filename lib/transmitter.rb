@@ -93,7 +93,7 @@ module RDFS
                 # File doesn't exist on node, so let's push it.
                 # Read it into a string (this will have to be improved at some point)
                 file_contents = read_file(RDFS_PATH + "/" + filename)
-                file_contents = Zlib::Deflate.deflate(Base64.encode64(file_contents))
+                file_contents = Base64.encode64(file_contents)
                 # Then push it in a POST call
                 response = Net::HTTP.post_form(uri,
                   'api_call' => 'add', 

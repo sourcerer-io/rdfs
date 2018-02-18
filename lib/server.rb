@@ -48,19 +48,11 @@ module RDFS
       case request.query['api_call']
         when "add"
           filename = request.query['filename']
-          tmp_filename = RDFS_PATH + filename + ".rdfstmp"
-          final_filename = RDFS_PATH + filename
+          final_filename = RDFS_PATH + "/" + filename
           
           # Decode, decompress, then save the file
           # We could use better compression, but for now this will work.
-          File.write(tmp_filename, Zlib::Inflate.inflate(Base64.decode64(request.query['content'])))
-          
-          # Compare SHA256 - if it doesn't match, delete
-          if sha256file(tmp_filename) != sha256sum
-            File.unlink(tmp_filename)
-          else
-            File.rename(tmp_filename, final_filename)
-          end
+          File.write(final_filename, Base64.decode64(request.query['content']))
           
           # There's no need to INSERT into the database, the updater will
           # do this for us text time around.
@@ -97,11 +89,6 @@ module RDFS
       end
 
       return 200, "text/plain", response_text
-    end
-
-    # Create SHA256 of a file
-    def sha256file(file)
-      return Digest::SHA256.file(file).hexdigest
     end
 
   end
