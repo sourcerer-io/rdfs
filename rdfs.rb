@@ -68,13 +68,14 @@ module RDFS
       sha256 VARCHAR(64),
       name VARCHAR(255),
       last_modified INT,
-      updated BOOLEAN);"
+      updated INT,
+      deleted INT);"
   RDFS_SCHEMA_NODES = "
     CREATE TABLE nodes (
       ip VARCHAR(15));"
 
   # RDFS path update frequency (in seconds)
-  RDFS_UPDATE_FREQ = 15
+  RDFS_UPDATE_FREQ = 10
 
   # RDFS transmit frequency (in seconds)
   RDFS_TRANSMIT_FREQ = 5
@@ -113,22 +114,23 @@ module RDFS
   # Open the database
   RDFS_DB = SQLite3::Database.open RDFS_DB_FILE
 
+  # Even in production, it's better for RDFS to crash than to have threads die
+  # and never run again. Makes it easier to track down issues.
+  Thread.abort_on_exception = true
+
   # Start the server
-  logger.debug("Starting RDFS Server.")
   Thread.new do
   @server = Server.new
   end
   sleep 1
 
   # Start the updater
-  logger.debug("Starting RDFS Updater.")
   Thread.new do
     @updater = Updater.new(RDFS_UPDATE_FREQ)
   end
   sleep 1
 
   # Start the transmitter
-  logger.debug("Starting RDFS Transmitter.")
   @transmitter = Transmitter.new(RDFS_TRANSMIT_FREQ)
 
   puts "RDFS Shutdown."

@@ -23,5 +23,11 @@ apt install ruby-sqlite3 ruby-daemons
 
 This software is licensed under the GPLv3 or later.
 
+## BUGS
 
+There are several known bugs in this release:
+
+* Adding more than 1 client node will produce unpredictable results
+* Compression for transfer was disabled due to Zlib issues
+* If database is out of sync with filesystem, unpredictable results will occur
 

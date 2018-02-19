@@ -35,11 +35,7 @@ module RDFS
 
     def kernel
       while @running
-        @logger.debug("Updater thread running.")
-
         update_database
-
-        @logger.debug("Updater thread paused.")
         Thread.pass
         sleep @update_frequency
       end
@@ -59,41 +55,61 @@ module RDFS
 
     # Update database with files
     def update_database
-      files = fetch_tree(RDFS_PATH)
-  
-      # Iterate through each entry and check to see if it is in the database
-      files.each { |f|
+      
+      check_for_deleted_files
 
+      # Fetch a list of all files
+      files = fetch_tree(RDFS_PATH)
+      @logger.debug("updater: There are currently " + files.size.to_s + " entries in " + RDFS_PATH)
+
+      # Iterate through each entry and check to see if it is in the database
+      files.each do |f|
+        
         # Reconstruct full path and get last modified time
         full_filename = RDFS_PATH + "/" + f
         last_modified = File.mtime(full_filename)
         updated = nil
-
+        
         # If it's not in the database, hash it and add it to the DB
-        row = RDFS_DB.execute("SELECT COUNT(*) FROM files WHERE name = '" + f + "'") 
-        if row[0][0] == 0
+        row = RDFS_DB.execute("SELECT * FROM files WHERE name = '" + f + "'") 
+        if row.count == 0
           # It wasn't in the database, so add it
           file_hash = sha256file(full_filename)
-          sql = "INSERT INTO files (sha256, name, last_modified, updated) VALUES ('" + file_hash + "', '" + f + "', " + last_modified.to_i.to_s + ", 1)"
-          @logger.debug(sql)
+          sql = "INSERT INTO files (sha256, name, last_modified, updated, deleted) VALUES ('" + file_hash + "', '" + f + "', " + last_modified.to_i.to_s + ", 1, 0)"
+          @logger.debug("updater: " + sql)
           RDFS_DB.execute(sql)
         else
           # It was in the database, so see if it has changed.
-          sql = "SELECT * FROM files WHERE name = '" + f + "'"
-          row = RDFS_DB.execute(sql)
-          if last_modified.to_i > row[0][2]
+          if last_modified.to_i > row[0][2].to_i
             # File has changed. Rehash it and updated the database.
             file_hash = sha256file(full_filename)
-            sql = "UPDATE files SET sha256 = '" + file_hash + "', last_modified = " + last_modified.to_i.to_s + ", updated = 1 WHERE name = '" + f + "'"
-            @logger.debug(sql)
+            sql = "UPDATE files SET sha256 = '" + file_hash + "', last_modified = " + last_modified.to_i.to_s + ", updated = 1, deleted = 0 WHERE name = '" + f + "'"
+            @logger.debug("updater: " + sql)
             RDFS_DB.execute(sql)
           end
         end
-      }
+      end
+    end
 
+    def check_for_deleted_files
+      # Check for deleted files
+      sql = "SELECT name FROM files WHERE updated = 0 AND deleted = 0"
+      @logger.debug("updater: " + sql)
+      all_files = RDFS_DB.execute(sql)
+      if all_files.count > 0
+        all_files.each do |f|
+          filename = f[0]
+          full_filename = RDFS_PATH + "/" + filename
+          unless File.exists?(full_filename)
+            # File doesn't exist, so mark it deleted
+            sql = "UPDATE files SET deleted = 1 WHERE name = '" + filename + "'"
+            @logger.debug("updater: " + sql)
+            RDFS_DB.execute(sql)
+          end
+        end
+      end
     end
 
   end
 
 end
-

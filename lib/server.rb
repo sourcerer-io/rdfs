@@ -52,6 +52,7 @@ module RDFS
           
           # Decode, decompress, then save the file
           # We could use better compression, but for now this will work.
+          puts "Wrote file " + final_filename
           File.write(final_filename, Base64.decode64(request.query['content']))
           
           # There's no need to INSERT into the database, the updater will
@@ -72,6 +73,16 @@ module RDFS
           else
             # SHA256 not found
             # File deleted after query but before add_dup?
+            response_text = "NOT_FOUND"
+          end
+
+        when "delete"
+          # Delete file was called
+          filename = request.query['filename']
+          full_filename = RDFS_PATH + "/" + filename
+          if File.exists?(full_filename)
+            File.unlink(full_filename)
+          else
             response_text = "NOT_FOUND"
           end
 
