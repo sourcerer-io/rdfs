@@ -80,8 +80,15 @@ module RDFS
           # Delete file was called
           filename = request.query['filename']
           full_filename = RDFS_PATH + "/" + filename
+          # Does the file exist?
           if File.exists?(full_filename)
-            File.unlink(full_filename)
+            # Is it a directory? If so, handle it separately.
+            if File.directory?(full_filename)
+              FileUtils.rmdir(full_filename)
+            else
+              # Force deletion of a file.
+              FileUtils.rm_f(full_filename)
+            end
           else
             response_text = "NOT_FOUND"
           end
