@@ -49,7 +49,7 @@ module RDFS
     # Return a tree of the specified path
     def fetch_tree(path)
       result = Array.new
-      Find.find(path) { |e| result << e.sub(RDFS_PATH + "/", "") if e != RDFS_PATH }
+      Find.find(path) { |e| result << e.sub(RDFS_PATH + "/", "") if e != RDFS_PATH && ! File.directory?(e) }
       return result
     end
 
