@@ -34,12 +34,9 @@ module RDFS
 
     def kernel
       while @running
-        #@logger.debug("Transmitter thread running.")
-
         # Transmit
         transmit
 
-        #@logger.debug("Transmitter thread paused.")
         Thread.pass
         sleep @transmit_frequency
       end
@@ -60,6 +57,7 @@ module RDFS
     def transmit
       # First, check to see if there are any active nodes. If not, there's no
       # point in wasting DB time in checking for updated files.
+      # This could use some refactoring.
       sql = "SELECT * FROM nodes"
       nodes_row = RDFS_DB.execute(sql)
       if nodes_row.count > 0
@@ -79,51 +77,56 @@ module RDFS
               uri = URI.parse('http://' + ip + ':' + RDFS_PORT.to_s + '/files')
               if (updated != 0) && (deleted == 0)
                 # UPDATE
-                response = Net::HTTP.post_form(uri,
-                  'api_call' => 'add_query', 
-                  'filename' => filename, 
-                  'sha256sum' => sha256sum)
-                if response.body.include?("EXISTS")
-                  # File exists but with a different filename, so call the add_dup
-                  # function to avoid using needless bandwidth
+                begin
                   response = Net::HTTP.post_form(uri,
-                    'api_call' => 'add_dup', 
+                    'api_call' => 'add_query', 
                     'filename' => filename, 
                     'sha256sum' => sha256sum)
-                  if response.body.include?("OK")
-                    clear_update_flag(filename)
+                  if response.body.include?("EXISTS")
+                    # File exists but with a different filename, so call the add_dup
+                    # function to avoid using needless bandwidth
+                    response = Net::HTTP.post_form(uri,
+                      'api_call' => 'add_dup', 
+                      'filename' => filename, 
+                      'sha256sum' => sha256sum)
+                    if response.body.include?("OK")
+                      clear_update_flag(filename)
+                    end
+                  else
+                    # File doesn't exist on node, so let's push it.
+                    # Read it into a string (this will have to be improved at some point)
+                    file_contents = read_file(RDFS_PATH + "/" + filename)
+                    file_contents = Base64.encode64(file_contents)
+                    # Then push it in a POST call
+                    response = Net::HTTP.post_form(uri,
+                      'api_call' => 'add', 
+                      'filename' => filename, 
+                      'sha256sum' => sha256sum,
+                      'content' => file_contents)
+                    if response.body.include?("OK")
+                      clear_update_flag(filename)
+                    end
                   end
-                else
-                  # File doesn't exist on node, so let's push it.
-                  # Read it into a string (this will have to be improved at some point)
-                  file_contents = read_file(RDFS_PATH + "/" + filename)
-                  file_contents = Base64.encode64(file_contents)
-                  # Then push it in a POST call
-                  response = Net::HTTP.post_form(uri,
-                    'api_call' => 'add', 
-                    'filename' => filename, 
-                    'sha256sum' => sha256sum,
-                    'content' => file_contents)
-                  if response.body.include?("OK")
-                    clear_update_flag(filename)
-                  end
+                rescue
+                  @logger.debug("transmitter: Unable to connect to node at IP " + ip + ".") 
                 end
               end
               if (deleted != 0)
                 # DELETED
-                response = Net::HTTP.post_form(uri,
-                  'api_call' => 'delete',
-                  'filename' => filename)
-                if response.body.include?("OK")
-                  clear_update_flag(filename)
+                begin
+                  response = Net::HTTP.post_form(uri,
+                    'api_call' => 'delete',
+                    'filename' => filename)
+                  if response.body.include?("OK")
+                    clear_update_flag(filename)
+                  end
+                rescue
+                  @logger.debug("transmitter: Unable to connect to node at IP " + ip + ".") 
                 end
               end
             end
           end
         end
-      else
-        @logger.debug("transmitter: No nodes found, so clearing all updated flags.")
-        RDFS_DB.execute("UPDATE files SET updated = 0")
       end
     end
 

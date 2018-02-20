@@ -52,11 +52,20 @@ module RDFS
           
           # Decode, decompress, then save the file
           # We could use better compression, but for now this will work.
-          puts "Wrote file " + final_filename
           File.write(final_filename, Base64.decode64(request.query['content']))
+    
+          # Get SHA256 for database
+          sha256sum = Digest::SHA256.file(final_filename).hexdigest   
           
-          # There's no need to INSERT into the database, the updater will
-          # do this for us text time around.
+          # Add it to the local database with updated and deleted set to 0 so that
+          # the client's transmitter won't try to send it to possibly non-existent nodes.
+          query = RDFS_DB.prepare("INSERT INTO files (name, sha256, last_modified, updated, deleted) SET (:name, :sha256, :last_modified, :updated, :deleted)")
+          query.bind_param('name', filename)
+          query.bind_param('sha256', sha256sum)
+          query.bind_param('last_modified', Time.now.to_i)
+          query.bind_param('updated', '0')
+          query.bind_param('deleted', '0')
+          query.execute
           
         when "add_dup"
           filename = request.query['filename']
