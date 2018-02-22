@@ -19,6 +19,10 @@ While RDFS is functional, it is not an ideal construction of a high performance,
 To install requirements on a Debian based system, run:
 apt install ruby-sqlite3 ruby-daemons
 
+## USE
+
+ruby rdfsctl.rb start
+
 ## LICENSE
 
 This software is licensed under the GPLv3 or later.
@@ -27,7 +31,7 @@ This software is licensed under the GPLv3 or later.
 
 There are several known bugs in this release:
 
-* Adding more than 1 client node will produce unpredictable results
+* Adding more than 2 nodes may produce unpredictable results
 * Compression for transfer was disabled due to Zlib issues
 * If database is out of sync with filesystem, unpredictable results will occur
 
