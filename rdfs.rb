@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# RDFS - Ruby Distributed File System
+# RDFS - Ruby Distributed File Sync
 # Copyright (C) 2018 Sourcerer, All Rights Reserved
 # Written by Robert W. Oliver II - <robert@cidergrove.com>
 #
@@ -92,7 +92,7 @@ module RDFS
   end
 
   # Output startup message
-  puts "RDFS - Ruby Distributed File System\n"\
+  puts "RDFS - Ruby Distributed File Sync\n"\
     "Copyright (C) 2018 Sourcerer, All Rights Reserved.\n"\
     "Written by Robert W. Oliver II. Licensed under the GPLv3.\n\n"
 

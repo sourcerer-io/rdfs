@@ -1,5 +1,5 @@
 
-# Ruby Distributed File System (RDFS)
+# Ruby Distributed File Sync (RDFS)
 
 Copyright (C) 2018 Sourcerer, All Rights Reserved
 Written by Robert W. Oliver II - <robert@cidergrove.com>
